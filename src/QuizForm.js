@@ -1,10 +1,25 @@
 import { useState } from "react";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "./firebase";
-import { Button, TextField, Radio, Checkbox, FormControl, InputLabel, Select, MenuItem, Box } from "@mui/material";
+import { 
+  Button, 
+  TextField, 
+  Radio, 
+  Checkbox, 
+  FormControl, 
+  InputLabel, 
+  Select, 
+  MenuItem, 
+  Box,
+  FormControlLabel,
+  Typography
+} from "@mui/material";
 
 export default function QuizForm() {
   const [title, setTitle] = useState("");
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isControl, setIsControl] = useState(false);
+  const [passingScore, setPassingScore] = useState(70);
   const [questions, setQuestions] = useState([{
     text: "",
     type: "single",
@@ -13,7 +28,6 @@ export default function QuizForm() {
     correctText: ""
   }]);
 
-  // Объявляем все функции в начале
   const addQuestion = () => {
     setQuestions([...questions, {
       text: "",
@@ -103,10 +117,16 @@ export default function QuizForm() {
       await addDoc(collection(db, "quizzes"), { 
         title, 
         questions,
+        isAnonymous,
+        isControl,
+        passingScore: isControl ? passingScore : null,
         createdAt: new Date() 
       });
       alert("Тест успешно создан!");
       setTitle("");
+      setIsAnonymous(false);
+      setIsControl(false);
+      setPassingScore(70);
       setQuestions([{
         text: "",
         type: "single",
@@ -122,6 +142,8 @@ export default function QuizForm() {
 
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ p: 2 }}>
+      <Typography variant="h4" gutterBottom>Создание нового теста</Typography>
+      
       <TextField
         fullWidth
         label="Название теста"
@@ -130,6 +152,40 @@ export default function QuizForm() {
         margin="normal"
         required
       />
+      
+      <Box sx={{ mb: 3, p: 2, border: 1, borderColor: 'grey.300', borderRadius: 1 }}>
+        <Typography variant="h6" gutterBottom>Настройки теста</Typography>
+        
+        <FormControlLabel
+          control={<Checkbox checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)} />}
+          label="Анонимный тест (не запрашивать ФИО)"
+        />
+        
+        <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+          <FormControlLabel
+            control={<Checkbox checked={isControl} onChange={(e) => setIsControl(e.target.checked)} />}
+            label="Контрольный тест"
+          />
+          
+          {isControl && (
+            <TextField
+              label="Минимальный % для сдачи"
+              type="number"
+              value={passingScore}
+              onChange={(e) => {
+                let value = parseInt(e.target.value);
+                if (value < 1) value = 1;
+                if (value > 100) value = 100;
+                setPassingScore(value);
+              }}
+              sx={{ width: 120, ml: 2 }}
+              inputProps={{ min: 1, max: 100 }}
+            />
+          )}
+        </Box>
+      </Box>
+      
+      <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Вопросы теста</Typography>
       
       {questions.map((q, qIndex) => (
         <Box key={qIndex} sx={{ 
@@ -241,6 +297,9 @@ export default function QuizForm() {
           type="submit" 
           variant="contained" 
           color="primary"
+          disabled={!title || questions.some(q => !q.text || 
+            (q.type !== "text" && q.options.some(opt => !opt.trim())) || 
+            (q.type === "text" && !q.correctText.trim())}
         >
           Сохранить тест
         </Button>

@@ -12,6 +12,7 @@ export default function Quiz() {
   const [textAnswer, setTextAnswer] = useState("");
   const [score, setScore] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [userName, setUserName] = useState("");
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -23,6 +24,39 @@ export default function Quiz() {
     };
     fetchQuiz();
   }, [id]);
+
+  // Проверка необходимости ввода ФИО
+  if (!quiz) {
+    return <Typography>Загрузка теста...</Typography>;
+  }
+
+  if (!quiz.isAnonymous && !userName && !isSubmitted) {
+    return (
+      <Box sx={{ p: 3, maxWidth: 500, margin: '0 auto' }}>
+        <Typography variant="h5" gutterBottom>
+          Перед началом теста
+        </Typography>
+        <Typography sx={{ mb: 2 }}>
+          Пожалуйста, введите ваше ФИО для идентификации
+        </Typography>
+        <TextField
+          fullWidth
+          label="Ваше ФИО"
+          value={userName}
+          onChange={(e) => setUserName(e.target.value)}
+          required
+        />
+        <Button
+          onClick={() => setUserName(userName.trim())}
+          disabled={!userName.trim()}
+          variant="contained"
+          sx={{ mt: 2 }}
+        >
+          Начать тест
+        </Button>
+      </Box>
+    );
+  }
 
   const handleOptionSelect = (optIndex) => {
     const question = quiz.questions[currentQuestion];
@@ -63,36 +97,65 @@ export default function Quiz() {
   };
 
   const saveResult = async () => {
+    const percentage = Math.round((score / quiz.questions.length) * 100);
+    const isPassed = !quiz.isControl || percentage >= quiz.passingScore;
+    
     try {
       await addDoc(collection(db, "results"), {
         quizId: id,
         quizTitle: quiz.title,
+        userName: quiz.isAnonymous ? "Аноним" : userName,
         score,
         total: quiz.questions.length,
-        timestamp: new Date(),
+        percentage,
+        isPassed,
+        isControl: quiz.isControl,
+        passingScore: quiz.passingScore || null,
+        timestamp: new Date()
       });
     } catch (error) {
       console.error("Ошибка при сохранении результата:", error);
     }
   };
 
-  if (!quiz) return <Typography>Загрузка теста...</Typography>;
   if (isSubmitted) {
+    const percentage = Math.round((score / quiz.questions.length) * 100);
+    const isPassed = !quiz.isControl || percentage >= quiz.passingScore;
+    
     return (
       <Box sx={{ p: 3, textAlign: 'center' }}>
         <Typography variant="h4" gutterBottom>
-          Тест завершен!
+          {quiz.isControl ? (isPassed ? 'Тест сдан!' : 'Тест не сдан') : 'Тест завершен!'}
         </Typography>
-        <Typography variant="h6">
-          Ваш результат: {score} из {quiz.questions.length}
+        
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Ваш результат: {score} из {quiz.questions.length} ({percentage}%)
         </Typography>
-        <Typography sx={{ mt: 2 }}>
-          {score === quiz.questions.length 
-            ? "Отличный результат! 🎉" 
-            : score >= quiz.questions.length / 2 
-              ? "Хороший результат! 👍" 
-              : "Попробуйте еще раз! 💪"}
-        </Typography>
+        
+        {quiz.isControl && (
+          <>
+            <Typography sx={{ mt: 2 }}>
+              Минимальный проходной балл: {quiz.passingScore}%
+            </Typography>
+            <Typography sx={{ 
+              mt: 2, 
+              fontSize: '1.2rem',
+              color: isPassed ? 'green' : 'red',
+              fontWeight: 'bold'
+            }}>
+              Статус: {isPassed ? 'СДАЛ' : 'НЕ СДАЛ'}
+            </Typography>
+          </>
+        )}
+        
+        <Button 
+          component={Link} 
+          to="/results" 
+          variant="contained" 
+          sx={{ mt: 3 }}
+        >
+          Посмотреть все результаты
+        </Button>
       </Box>
     );
   }
@@ -101,10 +164,16 @@ export default function Quiz() {
   const progress = ((currentQuestion) / quiz.questions.length) * 100;
 
   return (
-    <Box sx={{ p: 2 }}>
+    <Box sx={{ p: 2, maxWidth: 800, margin: '0 auto' }}>
       <Typography variant="h5" gutterBottom>
         {quiz.title}
       </Typography>
+      
+      {!quiz.isAnonymous && (
+        <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          Участник: {userName}
+        </Typography>
+      )}
       
       <LinearProgress 
         variant="determinate" 

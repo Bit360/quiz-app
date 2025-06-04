@@ -24,14 +24,24 @@ export default function QuizList() {
         Доступные тесты
       </Typography>
       
-      <Button 
-        component={Link} 
-        to="/create" 
-        variant="contained" 
-        sx={{ mb: 3 }}
-      >
-        Создать новый тест
-      </Button>
+      <Box sx={{ display: 'flex', mb: 3 }}>
+        <Button 
+          component={Link} 
+          to="/create" 
+          variant="contained"
+          sx={{ mr: 2 }}
+        >
+          Создать новый тест
+        </Button>
+        
+        <Button 
+          component={Link} 
+          to="/results" 
+          variant="outlined"
+        >
+          Просмотреть результаты
+        </Button>
+      </Box>
       
       <List>
         {quizzes.map(quiz => (
@@ -54,7 +64,9 @@ export default function QuizList() {
             >
               <Typography variant="h6">{quiz.title}</Typography>
               <Typography variant="body2" color="text.secondary">
-                {quiz.questions?.length || 0} вопросов
+                {quiz.questions?.length || 0} вопросов • 
+                {quiz.isAnonymous ? ' Анонимный' : ' Требуется ФИО'} • 
+                {quiz.isControl ? ` Контрольный (${quiz.passingScore}% для сдачи)` : ' Обычный'}
               </Typography>
             </Link>
           </ListItem>
