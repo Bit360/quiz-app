@@ -20,7 +20,36 @@ export default function Quiz() {
     };
     fetchQuiz();
   }, [id]);
-
+const handleAnswer = () => {
+  const question = quiz.questions[currentQuestion];
+  
+  if (question.type === "text") {
+    // Проверка текстового ответа
+    const isCorrect = userAnswer.toLowerCase() === question.correctText.toLowerCase();
+    if (isCorrect) setScore(score + 1);
+  } else {
+    // Проверка выбранных вариантов
+    const isCorrect = arraysEqual(selectedOptions.sort(), question.correctOptions.sort());
+    if (isCorrect) setScore(score + 1);
+  }
+  
+  setCurrentQuestion(currentQuestion + 1);
+};
+function arraysEqual(a, b) {
+  return a.length === b.length && a.every((val, i) => val === b[i]);
+}
+const toggleCorrectOption = (qIndex, optIndex) => {
+  const newQuestions = [...questions];
+  const correctOptions = newQuestions[qIndex].correctOptions;
+  
+  if (correctOptions.includes(optIndex)) {
+    newQuestions[qIndex].correctOptions = correctOptions.filter(i => i !== optIndex);
+  } else {
+    newQuestions[qIndex].correctOptions = [...correctOptions, optIndex];
+  }
+  
+  setQuestions(newQuestions);
+};
   const handleNext = () => {
     if (selectedOption === quiz.questions[currentQuestion].correctOption) {
       setScore(score + 1);
@@ -53,18 +82,23 @@ export default function Quiz() {
     <div>
       <h2>{quiz.questions[currentQuestion].text}</h2>
       <ul>
-        {quiz.questions[currentQuestion].options.map((opt, index) => (
-          <li key={index}>
-            <label>
-              <input
-                type="radio"
-                checked={selectedOption === index}
-                onChange={() => setSelectedOption(index)}
-              />
-              {opt}
-            </label>
-          </li>
-        ))}
+      {question.type === "text" ? (
+  <input 
+    value={userAnswer}
+    onChange={(e) => setUserAnswer(e.target.value)}
+  />
+) : (
+  question.options.map((opt, optIndex) => (
+    <label key={optIndex}>
+      <input
+        type={question.type === "single" ? "radio" : "checkbox"}
+        checked={selectedOptions.includes(optIndex)}
+        onChange={() => handleOptionSelect(optIndex)}
+      />
+      {opt}
+    </label>
+  ))
+)}
       </ul>
       <button onClick={handleNext}>Далее</button>
     </div>
