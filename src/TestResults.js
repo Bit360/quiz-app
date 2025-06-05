@@ -70,7 +70,7 @@ export default function TestResults() {
         </Typography>
         <Button 
           component={Link} 
-          to="/results" 
+          to="/" 
           variant="outlined"
         >
           Назад к списку тестов
