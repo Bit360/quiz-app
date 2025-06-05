@@ -23,6 +23,9 @@ export default function NavBar() {
             <Button color="inherit" component={Link} to="/">
               Главная
             </Button>
+            <Button color="inherit" component={Link} to="/quizlistuser">
+              Список тестов для прохождения
+            </Button>
             <Button color="inherit" component={Link} to="/change-password">
               Сменить пароль
             </Button>
