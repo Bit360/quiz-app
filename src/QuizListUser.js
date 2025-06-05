@@ -45,6 +45,14 @@ export default function QuizList() {
                    primary={
     <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
       {quiz.title || 'Без названия'}
+       {quiz.isControl && (
+                  <Chip 
+                    label="Контрольный" 
+                    color="primary" 
+                    size="small"
+                    sx={{ ml: 2 }}
+                  />
+                )}
     </Typography>
   }
                   secondary={
@@ -56,14 +64,7 @@ export default function QuizList() {
                     </>
                   }
                 />
-                {quiz.isControl && (
-                  <Chip 
-                    label="Контрольный" 
-                    color="primary" 
-                    size="small"
-                    sx={{ ml: 2 }}
-                  />
-                )}
+               
               </ListItemButton>
             </ListItem>
             <Divider />

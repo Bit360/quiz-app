@@ -16,7 +16,7 @@ export default function NavBar() {
     <AppBar position="static">
       <Toolbar>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          Средняя школа №11 г.Витебска имени М.М.Бахтина
+          Государственное учреждение образования "Средняя школа №11 г.Витебска имени М.М.Бахтина"
         </Typography>
         {isAuthenticated && (
           <>

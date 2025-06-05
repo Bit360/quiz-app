@@ -23,6 +23,11 @@ export default function App() {
               <QuizList />
             </ProtectedRoute>
           } />
+          <Route path="/edit/:id" element={
+  <ProtectedRoute>
+    <QuizForm editMode={true} />
+  </ProtectedRoute>
+} />
           <Route path="/create" element={
             <ProtectedRoute>
               <QuizForm />
