@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { 
   collection, 
   query, 
   where, 
-  orderBy, 
+  orderBy, getDoc,
   getDocs,
-  doc,
-  getDoc
-} from "firebase/firestore";
-import { db } from "./firebase";
+  deleteDoc,
+  doc
+} from 'firebase/firestore';
+import { db } from './firebase';
 import { 
   Table, 
   TableBody, 
@@ -21,59 +21,64 @@ import {
   Typography, 
   Box,
   Chip,
-  Button
-} from "@mui/material";
-import { Link } from "react-router-dom";
+  Button,
+  IconButton
+} from '@mui/material';
+import { Link } from 'react-router-dom';
+import { Close } from '@mui/icons-material';
 
 export default function TestResults() {
   const { id } = useParams();
   const [results, setResults] = useState([]);
   const [quiz, setQuiz] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       // Получаем информацию о тесте
-      const quizDoc = await getDoc(doc(db, "quizzes", id));
+      const quizDoc = await getDoc(doc(db, 'quizzes', id));
       if (quizDoc.exists()) {
         setQuiz(quizDoc.data());
       }
 
       // Получаем результаты для этого теста
       const q = query(
-        collection(db, "results"), 
-        where("quizId", "==", id),
-        orderBy("timestamp", "desc")
+        collection(db, 'results'), 
+        where('quizId', '==', id),
+        orderBy('timestamp', 'desc')
       );
       const querySnapshot = await getDocs(q);
-      setResults(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setResults(querySnapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      })));
+      setLoading(false);
     };
 
     fetchData();
   }, [id]);
 
+  const handleDeleteResult = async (resultId) => {
+    if (window.confirm('Удалить этот результат?')) {
+      await deleteDoc(doc(db, 'results', resultId));
+      setResults(results.filter(r => r.id !== resultId));
+    }
+  };
+
   if (!quiz) return <Typography>Загрузка...</Typography>;
 
   return (
     <Box sx={{ p: 3 }}>
-      <Paper elevation={3} sx={{ p: 3, mb: 3, backgroundColor: '#f5f5f5' }}>
-  <Typography variant="h4" component="h1" sx={{ 
-    fontWeight: 'bold', 
-    color: 'primary.main',
-    textAlign: 'center'
-  }}>
-    Результаты теста: {quiz.title}
-  </Typography>
-</Paper>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h4">
-        
+          Результаты теста: {quiz.title}
         </Typography>
         <Button 
           component={Link} 
-          to="/" 
+          to="/results" 
           variant="outlined"
         >
-          Назад к списку тестов
+          Назад
         </Button>
       </Box>
 
@@ -90,7 +95,8 @@ export default function TestResults() {
               <TableCell>Участник</TableCell>
               <TableCell align="center">Результат</TableCell>
               {quiz.isControl && <TableCell align="center">Статус</TableCell>}
-              <TableCell align="right">Дата прохождения</TableCell>
+              <TableCell align="right">Дата</TableCell>
+              <TableCell align="right">Действия</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -113,6 +119,14 @@ export default function TestResults() {
                     result.timestamp.toDate().toLocaleString() : 
                     new Date(result.timestamp?.seconds * 1000).toLocaleString()}
                 </TableCell>
+                <TableCell align="right">
+                  <IconButton
+                    onClick={() => handleDeleteResult(result.id)}
+                    color="error"
+                  >
+                    <Close />
+                  </IconButton>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -120,7 +134,7 @@ export default function TestResults() {
       </TableContainer>
 
       {results.length === 0 && (
-        <Typography sx={{ mt: 3 }}>Пока нет результатов для этого теста</Typography>
+        <Typography sx={{ mt: 3 }}>Нет результатов для отображения</Typography>
       )}
     </Box>
   );

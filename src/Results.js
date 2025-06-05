@@ -1,105 +1,151 @@
-import { useState, useEffect } from "react";
-import { collection, query, orderBy, getDocs } from "firebase/firestore";
-import { db } from "./firebase";
+import { useState, useEffect } from 'react';
+import { 
+  collection, 
+  query, 
+  orderBy, 
+  getDocs,
+  where,
+  deleteDoc,
+  writeBatch
+} from 'firebase/firestore';
+import { db } from './firebase';
 import { 
   List, 
   ListItem, 
-  ListItemButton,
   ListItemText, 
   Typography, 
   Box,
+  Button,
   Chip,
   Divider,
-  CircularProgress
-} from "@mui/material";
-import { Link } from "react-router-dom";
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton
+} from '@mui/material';
+import { Delete, ClearAll } from '@mui/icons-material';
+import { Link } from 'react-router-dom';
 
 export default function Results() {
-  // 1. Объявляем все состояния
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [selectedQuiz, setSelectedQuiz] = useState(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // 2. Загрузка данных
   useEffect(() => {
-    const fetchQuizzes = async () => {
-      try {
-        // Безопасный запрос без сложных условий
-        const q = query(
-          collection(db, "quizzes"), 
-          orderBy("createdAt", "desc") // Используем только одно поле для сортировки
-        );
-        const snapshot = await getDocs(q);
-        setQuizzes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      } catch (error) {
-        console.error("Error loading quizzes:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchQuizzes();
   }, []);
 
-  // 3. Состояния загрузки и ошибки
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const fetchQuizzes = async () => {
+    const q = query(collection(db, 'quizzes'), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    setQuizzes(querySnapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      ...doc.data() 
+    })));
+    setLoading(false);
+  };
 
-  if (error) {
-    return (
-      <Box sx={{ p: 3, color: 'error.main' }}>
-        <Typography>Ошибка: {error}</Typography>
-      </Box>
-    );
-  }
+  const handleClearAllResults = async (quizId) => {
+    setSelectedQuiz(quizId);
+    setConfirmOpen(true);
+  };
 
-  // 4. Основной рендер
+  const confirmClearAll = async () => {
+    try {
+      // Получаем все результаты для теста
+      const resultsQuery = query(
+        collection(db, 'results'),
+        where('quizId', '==', selectedQuiz)
+      );
+      
+      const snapshot = await getDocs(resultsQuery);
+      const batch = writeBatch(db);
+      
+      snapshot.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+
+      await batch.commit();
+      alert(`Удалено ${snapshot.size} результатов`);
+    } catch (error) {
+      console.error('Ошибка при удалении:', error);
+      alert('Ошибка при удалении результатов');
+    } finally {
+      setConfirmOpen(false);
+    }
+  };
+
+  if (loading) return <Typography>Загрузка...</Typography>;
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>
         Результаты тестов
       </Typography>
       
-      {quizzes.length === 0 ? (
-        <Typography>Нет доступных тестов</Typography>
-      ) : (
-        <List>
-          {quizzes.map((quiz) => (
-            <Box key={quiz.id}>
-              <ListItem disablePadding>
-                <ListItemButton 
-                  component={Link}
-                  to={`/results/${quiz.id}`}
-                  sx={{ py: 2 }}
-                >
-                  <ListItemText
-                    primary={quiz.title || "Без названия"}
-                    secondary={
-                      <>
-                        <span>
-                          {new Date(
-                            quiz.createdAt?.seconds * 1000 || Date.now()
-                          ).toLocaleDateString()}
-                        </span>
-                        {quiz.isControl && quiz.passingScore && (
-                          <span> • Проходной балл: {quiz.passingScore}%</span>
-                        )}
-                      </>
-                    }
-                  />
-                 
-                </ListItemButton>
-              </ListItem>
-              <Divider />
-            </Box>
-          ))}
-        </List>
-      )}
+      <List>
+        {quizzes.map(quiz => (
+          <Box key={quiz.id}>
+            <ListItem
+              secondaryAction={
+                <>
+                  <Button
+                    component={Link}
+                    to={`/results/${quiz.id}`}
+                    sx={{ mr: 2 }}
+                  >
+                    Просмотреть
+                  </Button>
+                  <Button
+                    onClick={() => handleClearAllResults(quiz.id)}
+                    startIcon={<ClearAll />}
+                    color="error"
+                  >
+                    Очистить все
+                  </Button>
+                </>
+              }
+            >
+              <ListItemText
+                primary={
+                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                    {quiz.title}
+                  </Typography>
+                }
+                secondary={
+                  <>
+                    <span>{quiz.questions?.length || 0} вопросов</span>
+                    {quiz.isControl && (
+                      <span> • Проходной балл: {quiz.passingScore}%</span>
+                    )}
+                  </>
+                }
+              />
+            </ListItem>
+            <Divider />
+          </Box>
+        ))}
+      </List>
+
+      {/* Диалог подтверждения */}
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <DialogTitle>Подтверждение</DialogTitle>
+        <DialogContent>
+          Вы уверены, что хотите удалить ВСЕ результаты этого теста?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)}>Отмена</Button>
+          <Button 
+            onClick={confirmClearAll}
+            color="error"
+            variant="contained"
+          >
+            Удалить все
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
