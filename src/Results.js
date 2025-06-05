@@ -1,180 +1,105 @@
-import { useState, useEffect } from 'react';
-import { 
-  collection, 
-  query, 
-  orderBy, 
-  getDocs,
-  where,
-  deleteDoc,
-  writeBatch
-} from 'firebase/firestore';
-import { db } from './firebase';
+import { useState, useEffect } from "react";
+import { collection, query, orderBy, getDocs } from "firebase/firestore";
+import { db } from "./firebase";
 import { 
   List, 
   ListItem, 
+  ListItemButton,
   ListItemText, 
   Typography, 
   Box,
-  Button,
   Chip,
   Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Stack
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers';
-import { Delete } from '@mui/icons-material';
+  CircularProgress
+} from "@mui/material";
+import { Link } from "react-router-dom";
 
 export default function Results() {
+  // 1. Объявляем все состояния
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedQuiz, setSelectedQuiz] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [dateRange, setDateRange] = useState({
-    start: null,
-    end: null
-  });
+  const [error, setError] = useState(null);
 
+  // 2. Загрузка данных
   useEffect(() => {
+    const fetchQuizzes = async () => {
+      try {
+        // Безопасный запрос без сложных условий
+        const q = query(
+          collection(db, "quizzes"), 
+          orderBy("createdAt", "desc") // Используем только одно поле для сортировки
+        );
+        const snapshot = await getDocs(q);
+        setQuizzes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (error) {
+        console.error("Error loading quizzes:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchQuizzes();
   }, []);
 
-  const fetchQuizzes = async () => {
-    const q = query(collection(db, 'quizzes'), orderBy('createdAt', 'desc'));
-    const querySnapshot = await getDocs(q);
-    setQuizzes(querySnapshot.docs.map(doc => ({ 
-      id: doc.id, 
-      ...doc.data() 
-    })));
-    setLoading(false);
-  };
+  // 3. Состояния загрузки и ошибки
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
-  const handleOpenDialog = (quiz) => {
-    setSelectedQuiz(quiz);
-    setOpenDialog(true);
-  };
+  if (error) {
+    return (
+      <Box sx={{ p: 3, color: 'error.main' }}>
+        <Typography>Ошибка: {error}</Typography>
+      </Box>
+    );
+  }
 
-  const handleClearResults = async () => {
-    if (!selectedQuiz || !dateRange.start || !dateRange.end) return;
-
-    try {
-      // Нормализуем даты (начало дня для start, конец дня для end)
-      const startDate = new Date(dateRange.start);
-      startDate.setHours(0, 0, 0, 0);
-      
-      const endDate = new Date(dateRange.end);
-      endDate.setHours(23, 59, 59, 999);
-
-      // Создаем пакет для массового удаления
-      const batch = writeBatch(db);
-      
-      // Получаем результаты для удаления
-      const resultsQuery = query(
-        collection(db, 'results'),
-        where('quizId', '==', selectedQuiz.id),
-        where('timestamp', '>=', startDate),
-        where('timestamp', '<=', endDate)
-      );
-
-      const snapshot = await getDocs(resultsQuery);
-      
-      // Добавляем каждый документ в пакет для удаления
-      snapshot.forEach(doc => {
-        batch.delete(doc.ref);
-      });
-
-      // Выполняем пакет
-      await batch.commit();
-
-      alert(`Удалено ${snapshot.size} результатов`);
-      setOpenDialog(false);
-      setDateRange({ start: null, end: null });
-    } catch (error) {
-      console.error('Ошибка при удалении результатов:', error);
-      alert('Произошла ошибка при удалении результатов');
-    }
-  };
-
-  if (loading) return <Typography>Загрузка...</Typography>;
-
+  // 4. Основной рендер
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>
         Результаты тестов
       </Typography>
       
-      <List>
-        {quizzes.map(quiz => (
-          <Box key={quiz.id}>
-            <ListItem
-              secondaryAction={
-                <Button
-                  onClick={() => handleOpenDialog(quiz)}
-                  startIcon={<Delete />}
-                  color="error"
+      {quizzes.length === 0 ? (
+        <Typography>Нет доступных тестов</Typography>
+      ) : (
+        <List>
+          {quizzes.map((quiz) => (
+            <Box key={quiz.id}>
+              <ListItem disablePadding>
+                <ListItemButton 
+                  component={Link}
+                  to={`/results/${quiz.id}`}
+                  sx={{ py: 2 }}
                 >
-                  Очистить результаты
-                </Button>
-              }
-            >
-              <ListItemText
-                primary={
-                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                    {quiz.title}
-                  </Typography>
-                }
-                secondary={
-                  <>
-                    <span>{quiz.questions?.length || 0} вопросов</span>
-                    {quiz.isControl && (
-                      <span> • Проходной балл: {quiz.passingScore}%</span>
-                    )}
-                  </>
-                }
-              />
-            </ListItem>
-            <Divider />
-          </Box>
-        ))}
-      </List>
-
-      {/* Диалог очистки результатов */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <DialogTitle>
-          Очистить результаты теста: {selectedQuiz?.title}
-        </DialogTitle>
-        <DialogContent>
-          <Stack spacing={3} sx={{ mt: 2, minWidth: 400 }}>
-            <DatePicker
-              label="Дата начала"
-              value={dateRange.start}
-              onChange={(date) => setDateRange({...dateRange, start: date})}
-              renderInput={(params) => <TextField {...params} />}
-            />
-            <DatePicker
-              label="Дата окончания"
-              value={dateRange.end}
-              onChange={(date) => setDateRange({...dateRange, end: date})}
-              renderInput={(params) => <TextField {...params} />}
-              minDate={dateRange.start}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Отмена</Button>
-          <Button 
-            onClick={handleClearResults}
-            disabled={!dateRange.start || !dateRange.end}
-            color="error"
-            variant="contained"
-          >
-            Очистить
-          </Button>
-        </DialogActions>
-      </Dialog>
+                  <ListItemText
+                    primary={quiz.title || "Без названия"}
+                    secondary={
+                      <>
+                        <span>
+                          {new Date(
+                            quiz.createdAt?.seconds * 1000 || Date.now()
+                          ).toLocaleDateString()}
+                        </span>
+                        {quiz.isControl && quiz.passingScore && (
+                          <span> • Проходной балл: {quiz.passingScore}%</span>
+                        )}
+                      </>
+                    }
+                  />
+                 
+                </ListItemButton>
+              </ListItem>
+              <Divider />
+            </Box>
+          ))}
+        </List>
+      )}
     </Box>
   );
 }

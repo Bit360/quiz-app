@@ -10,9 +10,11 @@ import Quiz from './Quiz';
 import Results from './Results';
 import TestResults from './TestResults';
 import ChangePassword from './ChangePassword';
-
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 export default function App() {
   return (
+      <LocalizationProvider dateAdapter={AdapterDateFns}>
     <AuthProvider>
       <BrowserRouter>
         <NavBar />
@@ -60,6 +62,6 @@ export default function App() {
           } />
         </Routes>
       </BrowserRouter>
-    </AuthProvider>
+    </AuthProvider></LocalizationProvider>
   );
 }
