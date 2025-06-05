@@ -299,8 +299,8 @@ export default function QuizForm() {
           color="primary"
           disabled={!title || questions.some(q => !q.text || 
             (q.type !== "text" && q.options.some(opt => !opt.trim())) || 
-            (q.type === "text" && !q.correctText.trim())}
-        >
+            (q.type === "text" && !q.correctText.trim()))}>
+        
           Сохранить тест
         </Button>
       </Box>
