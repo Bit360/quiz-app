@@ -1,25 +1,44 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "./firebase";
+import { 
+  List, 
+  ListItem, 
+  ListItemButton,
+  ListItemText, 
+  Typography, 
+  Box,
+  Button,
+  Chip,
+  Divider
+} from "@mui/material";
 import { Link } from "react-router-dom";
-import { Button, List, ListItem, Typography, Box } from "@mui/material";
 
 export default function QuizList() {
-  const [quizzes, setQuizzes] = useState([]);
+  // 1. Сначала объявляем все состояния
+  const [quizzes, setQuizzes] = useState([]); // Важно: quizzes объявлен здесь
 
+  // 2. Получаем данные из Firebase
   useEffect(() => {
     const fetchQuizzes = async () => {
-      const querySnapshot = await getDocs(collection(db, "quizzes"));
-      setQuizzes(querySnapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      })));
+      try {
+        const querySnapshot = await getDocs(collection(db, "quizzes"));
+        const quizzesData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setQuizzes(quizzesData); // Используем объявленную переменную
+      } catch (error) {
+        console.error("Ошибка при загрузке тестов:", error);
+      }
     };
+
     fetchQuizzes();
   }, []);
 
+  // 3. Рендерим компонент
   return (
-    <Box sx={{ p: 2 }}>
+    <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>
         Доступные тесты
       </Typography>
@@ -39,39 +58,56 @@ export default function QuizList() {
           to="/results" 
           variant="outlined"
         >
-          Просмотреть результаты
+          Все результаты
         </Button>
       </Box>
       
-      <List>
-        {quizzes.map(quiz => (
-          <ListItem 
-            key={quiz.id} 
-            sx={{ 
-              border: 1, 
-              borderColor: 'grey.300', 
-              borderRadius: 1, 
-              mb: 1 
-            }}
-          >
-            <Link 
-              to={`/quiz/${quiz.id}`} 
-              style={{ 
-                textDecoration: 'none', 
-                color: 'inherit', 
-                width: '100%' 
-              }}
-            >
-              <Typography variant="h6">{quiz.title}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {quiz.questions?.length || 0} вопросов • 
-                {quiz.isAnonymous ? ' Анонимный' : ' Требуется ФИО'} • 
-                {quiz.isControl ? ` Контрольный (${quiz.passingScore}% для сдачи)` : ' Обычный'}
-              </Typography>
-            </Link>
-          </ListItem>
-        ))}
-      </List>
+      {/* 4. Проверяем наличие тестов перед рендерингом */}
+      {quizzes.length === 0 ? (
+        <Typography>Нет доступных тестов</Typography>
+      ) : (
+        <List>
+          {quizzes.map((quiz) => (
+            <Box key={quiz.id}>
+              <ListItem
+                disablePadding
+                secondaryAction={
+                  <Button 
+                    component={Link}
+                    to={`/results/${quiz.id}`}
+                    size="small"
+                  >
+                    Результаты
+                  </Button>
+                }
+              >
+                <ListItemButton component={Link} to={`/quiz/${quiz.id}`}>
+                  <ListItemText
+                    primary={quiz.title || "Без названия"}
+                    secondary={
+                      <>
+                        <span>{quiz.questions?.length || 0} вопросов</span>
+                        {quiz.isControl && (
+                          <span> • Проходной балл: {quiz.passingScore}%</span>
+                        )}
+                      </>
+                    }
+                  />
+                  {quiz.isControl && (
+                    <Chip 
+                      label="Контрольный" 
+                      color="primary" 
+                      size="small"
+                      sx={{ ml: 2 }}
+                    />
+                  )}
+                </ListItemButton>
+              </ListItem>
+              <Divider />
+            </Box>
+          ))}
+        </List>
+      )}
     </Box>
   );
 }

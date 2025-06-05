@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { doc, getDoc, collection, addDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { Button, Radio, Checkbox, TextField, Box, Typography, LinearProgress } from "@mui/material";
@@ -7,12 +7,15 @@ import { Button, Radio, Checkbox, TextField, Box, Typography, LinearProgress } f
 export default function Quiz() {
   const { id } = useParams();
   const [quiz, setQuiz] = useState(null);
+  const [userName, setUserName] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [testStarted, setTestStarted] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [textAnswer, setTextAnswer] = useState("");
   const [score, setScore] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [userName, setUserName] = useState("");
+  const [nameConfirmed, setNameConfirmed] = useState(false); // Новое состояние
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -25,35 +28,53 @@ export default function Quiz() {
     fetchQuiz();
   }, [id]);
 
-  // Проверка необходимости ввода ФИО
+   const handleNameSubmit = (e) => {
+    e.preventDefault(); // Важно предотвратить стандартное поведение формы
+    const trimmedName = userName.trim();
+    
+    if (!trimmedName) {
+      setNameError("Введите ФИО");
+      return;
+    }
+    
+    const nameParts = trimmedName.split(/\s+/).filter(part => part.length > 0);
+    if (nameParts.length < 2) {
+      setNameError("Введите минимум два слова (Фамилию и Имя)");
+      return;
+    }
+    
+    setNameError("");
+    setTestStarted(true);
+  };
+
   if (!quiz) {
     return <Typography>Загрузка теста...</Typography>;
   }
 
-  if (!quiz.isAnonymous && !userName && !isSubmitted) {
+  if (!quiz.isAnonymous && !testStarted) {
     return (
       <Box sx={{ p: 3, maxWidth: 500, margin: '0 auto' }}>
         <Typography variant="h5" gutterBottom>
-          Перед началом теста
+          Введите ваше ФИО
         </Typography>
-        <Typography sx={{ mb: 2 }}>
-          Пожалуйста, введите ваше ФИО для идентификации
-        </Typography>
-        <TextField
-          fullWidth
-          label="Ваше ФИО"
-          value={userName}
-          onChange={(e) => setUserName(e.target.value)}
-          required
-        />
-        <Button
-          onClick={() => setUserName(userName.trim())}
-          disabled={!userName.trim()}
-          variant="contained"
-          sx={{ mt: 2 }}
-        >
-          Начать тест
-        </Button>
+        <form onSubmit={handleNameSubmit}>
+          <TextField
+            fullWidth
+            label="Фамилия Имя"
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+            error={!!nameError}
+            helperText={nameError}
+            margin="normal"
+          />
+          <Button
+            type="submit"
+            variant="contained"
+            sx={{ mt: 2 }}
+          >
+            Начать тест
+          </Button>
+        </form>
       </Box>
     );
   }
