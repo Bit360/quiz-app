@@ -55,9 +55,18 @@ export default function TestResults() {
 
   return (
     <Box sx={{ p: 3 }}>
+      <Paper elevation={3} sx={{ p: 3, mb: 3, backgroundColor: '#f5f5f5' }}>
+  <Typography variant="h4" component="h1" sx={{ 
+    fontWeight: 'bold', 
+    color: 'primary.main',
+    textAlign: 'center'
+  }}>
+    Результаты теста: {quiz.title}
+  </Typography>
+</Paper>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h4">
-          Результаты теста: {quiz.title}
+        
         </Typography>
         <Button 
           component={Link} 

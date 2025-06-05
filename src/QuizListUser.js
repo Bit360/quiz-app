@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect} from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 import { Link } from 'react-router-dom';
@@ -33,41 +33,12 @@ export default function QuizList() {
   if (loading) return <Typography>Загрузка...</Typography>;
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>Доступные тесты</Typography>
-      
-      <Box sx={{ display: 'flex', mb: 3 }}>
-        <Button 
-          component={Link} 
-          to="/create" 
-          variant="contained"
-          sx={{ mr: 2 }}
-        >
-          Создать тест
-        </Button>
-        <Button 
-          component={Link} 
-          to="/results" 
-          variant="outlined"
-        >
-          Все результаты
-        </Button>
-      </Box>
-
       <List>
         {quizzes.map(quiz => (
           <Box key={quiz.id}>
             <ListItem
               disablePadding
-              secondaryAction={
-                <Button 
-                  component={Link}
-                  to={`/results/${quiz.id}`}
-                  size="small"
-                >
-                  Результаты
-                </Button>
-              }
+             
             >
               <ListItemButton component={Link} to={`/quiz/${quiz.id}`}>
                 <ListItemText
@@ -99,6 +70,5 @@ export default function QuizList() {
           </Box>
         ))}
       </List>
-    </Box>
   );
 }

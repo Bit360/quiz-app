@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { doc, getDoc, collection, addDoc } from "firebase/firestore";
 import { db } from "./firebase";
-import { Button, Radio, Checkbox, TextField, Box, Typography, LinearProgress } from "@mui/material";
+import { Button, Radio, Checkbox, TextField, Box, Typography, LinearProgress,Paper } from "@mui/material";
 
 export default function Quiz() {
   const { id } = useParams();
@@ -145,9 +145,16 @@ export default function Quiz() {
     
     return (
       <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography variant="h4" gutterBottom>
-          {quiz.isControl ? (isPassed ? 'Тест сдан!' : 'Тест не сдан') : 'Тест завершен!'}
-        </Typography>
+         <Paper elevation={3} sx={{ p: 3, mb: 3, backgroundColor: '#f5f5f5' }}>
+  <Typography variant="h4" component="h1" sx={{ 
+    fontWeight: 'bold', 
+    color: 'primary.main',
+    textAlign: 'center'
+  }}>
+    Результаты теста: {quiz.title}
+  </Typography>
+</Paper>
+      
         
         <Typography variant="h6" sx={{ mt: 2 }}>
           Ваш результат: {score} из {quiz.questions.length} ({percentage}%)
@@ -171,11 +178,11 @@ export default function Quiz() {
         
         <Button 
           component={Link} 
-          to="/results" 
+          to="/quizlistuser" 
           variant="contained" 
           sx={{ mt: 3 }}
         >
-          Посмотреть все результаты
+          Вернуться к списку тестов
         </Button>
       </Box>
     );
