@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from 'react';
+import { shuffleArray } from './shuffleArray'; // Функция для перемешивания массива
 import { useParams, Link } from "react-router-dom";
 import { doc, getDoc, collection, addDoc } from "firebase/firestore";
 import { db } from "./firebase";
@@ -27,7 +28,40 @@ export default function Quiz() {
     };
     fetchQuiz();
   }, [id]);
-
+ const preparedQuestions = useMemo(() => {
+    if (!quiz) return [];
+    
+    let questions = [...quiz.questions];
+    
+    // Применяем настройки теста
+    if (quiz.settings?.randomizeQuestions) {
+      questions = shuffleArray(questions);
+    }
+    
+    if (quiz.settings?.questionsToShow) {
+      questions = questions.slice(0, quiz.settings.questionsToShow);
+    }
+    
+    // Перемешиваем ответы, если нужно
+    if (quiz.settings?.shuffleAnswers) {
+      questions = questions.map(q => {
+        if (q.type === 'text') return q;
+        
+        const shuffledOptions = shuffleArray([...q.options]);
+        const correctOptions = q.correctOptions.map(optIndex => 
+          shuffledOptions.indexOf(q.options[optIndex])
+        );
+        
+        return {
+          ...q,
+          options: shuffledOptions,
+          correctOptions
+        };
+      });
+    }
+    
+    return questions;
+  }, [quiz]);
    const handleNameSubmit = (e) => {
     e.preventDefault(); // Важно предотвратить стандартное поведение формы
     const trimmedName = userName.trim();
@@ -80,7 +114,7 @@ export default function Quiz() {
   }
 
   const handleOptionSelect = (optIndex) => {
-    const question = quiz.questions[currentQuestion];
+    const question = preparedQuestions[currentQuestion];
     
     if (question.type === "single") {
       setSelectedOptions([optIndex]);
@@ -94,7 +128,7 @@ export default function Quiz() {
   };
 
   const handleNext = () => {
-    const question = quiz.questions[currentQuestion];
+    const question = preparedQuestions[currentQuestion];
     let isCorrect = false;
 
     if (question.type === "text") {
@@ -107,7 +141,7 @@ export default function Quiz() {
 
     if (isCorrect) setScore(score + 1);
 
-    if (currentQuestion < quiz.questions.length - 1) {
+    if (currentQuestion < preparedQuestions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
       setSelectedOptions([]);
       setTextAnswer("");
@@ -118,7 +152,7 @@ export default function Quiz() {
   };
 
   const saveResult = async () => {
-    const percentage = Math.round((score / quiz.questions.length) * 100);
+    const percentage = Math.round((score / preparedQuestions.length) * 100);
     const isPassed = !quiz.isControl || percentage >= quiz.passingScore;
     
     try {
@@ -127,7 +161,7 @@ export default function Quiz() {
         quizTitle: quiz.title,
         userName: quiz.isAnonymous ? "Аноним" : userName,
         score,
-        total: quiz.questions.length,
+        total: preparedQuestions.length,
         percentage,
         isPassed,
         isControl: quiz.isControl,
@@ -140,7 +174,7 @@ export default function Quiz() {
   };
 
   if (isSubmitted) {
-    const percentage = Math.round((score / quiz.questions.length) * 100);
+    const percentage = Math.round((score / preparedQuestions.length) * 100);
     const isPassed = !quiz.isControl || percentage >= quiz.passingScore;
     
     return (
@@ -157,7 +191,7 @@ export default function Quiz() {
       
         
         <Typography variant="h6" sx={{ mt: 2 }}>
-          Ваш результат: {score} из {quiz.questions.length} ({percentage}%)
+          Ваш результат: {score} из {preparedQuestions.length} ({percentage}%)
         </Typography>
         
         {quiz.isControl && (
@@ -188,8 +222,8 @@ export default function Quiz() {
     );
   }
 
-  const question = quiz.questions[currentQuestion];
-  const progress = ((currentQuestion) / quiz.questions.length) * 100;
+  const question = preparedQuestions[currentQuestion];
+  const progress = ((currentQuestion) / preparedQuestions.length) * 100;
 
   return (
     <Box sx={{ p: 2, maxWidth: 800, margin: '0 auto' }}>
@@ -210,7 +244,7 @@ export default function Quiz() {
       />
       
       <Typography variant="h6" gutterBottom>
-        Вопрос {currentQuestion + 1} из {quiz.questions.length}
+        Вопрос {currentQuestion + 1} из {preparedQuestions.length}
       </Typography>
       
       <Typography variant="body1" sx={{ mb: 3, fontSize: '1.1rem' }}>
@@ -253,7 +287,7 @@ export default function Quiz() {
             (question.type === "text" && !textAnswer.trim())
           }
         >
-          {currentQuestion < quiz.questions.length - 1 ? "Далее" : "Завершить"}
+          {currentQuestion < preparedQuestions.length - 1 ? "Далее" : "Завершить"}
         </Button>
       </Box>
     </Box>

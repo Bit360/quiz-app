@@ -8,9 +8,11 @@ import {
   collection 
 } from 'firebase/firestore';
 import { Button, Radio, Checkbox, TextField, Box, Typography,FormControlLabel,FormControl,InputLabel,Select,MenuItem } from "@mui/material";
+import { AddCircleOutline, DeleteOutline } from '@mui/icons-material';
 import { db } from './firebase';
 
 export default function QuizForm({ editMode = false }) {
+  
   const { id } = useParams();
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
@@ -24,8 +26,23 @@ export default function QuizForm({ editMode = false }) {
     correctOptions: [0],
     correctText: ''
   }]);
+  
   const [loading, setLoading] = useState(editMode);
-
+ const [quizData, setQuizData] = useState({
+    title: '',
+    questions: [{
+      text: '',
+      type: 'single',
+      options: ['', ''],
+      correctOptions: [0],
+      correctText: ''
+    }],
+    settings: {
+      randomizeQuestions: false,
+      questionsToShow: null, // null - показывать все
+      shuffleAnswers: true
+    }
+  });
   // Загрузка теста для редактирования
   useEffect(() => {
     if (editMode) {
@@ -138,47 +155,82 @@ export default function QuizForm({ editMode = false }) {
   };
 
   const handleSubmit = async (e) => {
-       e.preventDefault();
-    const quizData = {
-      title,
-      questions,
-      isAnonymous,
-      isControl,
-      passingScore: isControl ? passingScore : null,
-      updatedAt: new Date()
-    };
-
-    try {
-      if (editMode) {
-        await updateDoc(doc(db, 'quizzes', id), quizData);
-      } else {
-        quizData.createdAt = new Date();
-        await addDoc(collection(db, 'quizzes'), quizData);
-      }
-      navigate('/');
-    } catch (error) {
-      console.error('Error saving quiz:', error);
-    }
-  };
+  e.preventDefault();
+  await addDoc(collection(db, 'quizzes'), {
+    ...quizData,
+    createdAt: new Date()
+  });
+};
 
     if (loading) return <Typography>Загрузка теста...</Typography>;
+    const handleSettingsChange = (key, value) => {
+    setQuizData({
+      ...quizData,
+      settings: {
+        ...quizData.settings,
+        [key]: value
+      }
+    });
+  };
     return (
       <Box component="form" onSubmit={handleSubmit} sx={{ p: 2 }}>
       <Typography variant="h4" gutterBottom>
         {editMode ? 'Редактирование теста' : 'Создание теста'}
       </Typography>
       
-      <TextField
+        <TextField
         fullWidth
         label="Название теста"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        value={quizData.title}
+        onChange={(e) => setQuizData({...quizData, title: e.target.value})}
         margin="normal"
         required
-      />
+      />  
       
       <Box sx={{ mb: 3, p: 2, border: 1, borderColor: 'grey.300', borderRadius: 1 }}>
-        <Typography variant="h6" gutterBottom>Настройки теста</Typography>
+         <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>
+        Настройки прохождения теста
+      </Typography>
+
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={quizData.settings.randomizeQuestions}
+            onChange={(e) => 
+              handleSettingsChange('randomizeQuestions', e.target.checked)
+            }
+          />
+        }
+        label="Случайный порядок вопросов"
+        sx={{ mb: 2 }}
+      />
+
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={quizData.settings.shuffleAnswers}
+            onChange={(e) => 
+              handleSettingsChange('shuffleAnswers', e.target.checked)
+            }
+          />
+        }
+        label="Перемешивать варианты ответов"
+        sx={{ mb: 2 }}
+      />
+
+      <TextField
+        label="Количество вопросов (оставьте пустым для всех)"
+        type="number"
+        value={quizData.settings.questionsToShow || ''}
+        onChange={(e) => 
+          handleSettingsChange(
+            'questionsToShow', 
+            e.target.value ? parseInt(e.target.value) : null
+          )
+        }
+        InputProps={{ inputProps: { min: 1 } }}
+        sx={{ mb: 3, width: 400 }}
+      />
         
         <FormControlLabel
           control={<Checkbox checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)} />}
@@ -190,7 +242,9 @@ export default function QuizForm({ editMode = false }) {
             control={<Checkbox checked={isControl} onChange={(e) => setIsControl(e.target.checked)} />}
             label="Контрольный тест"
           />
-          
+         
+
+     
           {isControl && (
             <TextField
               label="Минимальный % для сдачи"
@@ -240,6 +294,7 @@ export default function QuizForm({ editMode = false }) {
             >
               Удалить вопрос
             </Button>
+                  
           </Box>
           
           <TextField
@@ -310,6 +365,13 @@ export default function QuizForm({ editMode = false }) {
       ))}
       
      <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
+         <Button 
+          onClick={addQuestion}
+          startIcon={<AddCircleOutline />}
+          variant="contained"
+        >
+          Добавить вопрос
+        </Button>
         <Button 
           component={Link} 
           to="/" 
@@ -317,6 +379,7 @@ export default function QuizForm({ editMode = false }) {
         >
           На главную
         </Button>
+        
         <Button 
           type="submit" 
           variant="contained" 
