@@ -4,8 +4,8 @@ import { db } from './firebase';
 import { 
   List, 
   ListItem, 
-  ListItemButton,
   ListItemText, 
+  ListItemButton,
   Typography, 
   Box,
   Button,
@@ -80,19 +80,11 @@ export default function QuizList() {
                 </Box>
               }
             >
-              <ListItemButton component={Link} to={`/results/${quiz.id}`}>
+              <ListItemButton component={Link} to={`/quiz/${quiz.id}`}>
                 <ListItemText
                   primary={
                     <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                       {quiz.title}
-                      {quiz.isControl && (
-                  <Chip 
-                    label="Контрольный" 
-                    color="primary" 
-                    size="small"
-                    sx={{ ml: 2 }}
-                  />
-                )}
                     </Typography>
                   }
                   secondary={
@@ -104,7 +96,14 @@ export default function QuizList() {
                     </>
                   }
                 />
-                
+                {quiz.isControl && (
+                  <Chip 
+                    label="Контрольный" 
+                    color="primary" 
+                    size="small"
+                    sx={{ ml: 2 }}
+                  />
+                )}
               </ListItemButton>
             </ListItem>
             <Divider />

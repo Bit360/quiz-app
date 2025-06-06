@@ -3,7 +3,7 @@ import { shuffleArray } from './shuffleArray'; // Функция для пере
 import { useParams, Link } from "react-router-dom";
 import { doc, getDoc, collection, addDoc } from "firebase/firestore";
 import { db } from "./firebase";
-import { Button, Radio, Checkbox, TextField, Box, Typography, LinearProgress,Paper } from "@mui/material";
+import { Button, Radio, Checkbox, TextField, Box, Stack, Typography, LinearProgress,Paper } from "@mui/material";
 
 export default function Quiz() {
   const { id } = useParams();
@@ -88,6 +88,11 @@ export default function Quiz() {
   if (!quiz.isAnonymous && !testStarted) {
     return (
       <Box sx={{ p: 3, maxWidth: 500, margin: '0 auto' }}>
+         <Paper elevation={3} sx={{ p: 3, mb: 3, textAlign: 'center' }}>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+            {quiz.title}
+          </Typography>
+        </Paper>
         <Typography variant="h5" gutterBottom>
           Введите ваше ФИО
         </Typography>
@@ -178,46 +183,68 @@ export default function Quiz() {
     const isPassed = !quiz.isControl || percentage >= quiz.passingScore;
     
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
-         <Paper elevation={3} sx={{ p: 3, mb: 3, backgroundColor: '#f5f5f5' }}>
-  <Typography variant="h4" component="h1" sx={{ 
-    fontWeight: 'bold', 
-    color: 'primary.main',
-    textAlign: 'center'
-  }}>
-    Результаты теста: {quiz.title}
-  </Typography>
-</Paper>
-      
-        
-        <Typography variant="h6" sx={{ mt: 2 }}>
-          Ваш результат: {score} из {preparedQuestions.length} ({percentage}%)
-        </Typography>
-        
-        {quiz.isControl && (
-          <>
-            <Typography sx={{ mt: 2 }}>
-              Минимальный проходной балл: {quiz.passingScore}%
-            </Typography>
+      <Box sx={{ p: 3, maxWidth: 600, margin: '0 auto' }}>
+        <Paper elevation={3} sx={{ p: 3, mb: 4, textAlign: 'center' }}>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+            {quiz.title}
+          </Typography>
+        </Paper>
+
+        <Paper elevation={2} sx={{ p: 4, mb: 4, textAlign: 'center' }}>
+          <Typography variant="h5" gutterBottom sx={{ fontWeight: 'medium' }}>
+            {quiz.isControl ? 
+              (isPassed ? 'ТЕСТ СДАН!' : 'ТЕСТ НЕ СДАН') : 
+              'ТЕСТ ЗАВЕРШЕН'}
+          </Typography>
+          
+          <Typography variant="h3" sx={{ 
+            color: isPassed ? 'success.main' : 'error.main',
+            fontWeight: 'bold',
+            mb: 2
+          }}>
+            {score} из {preparedQuestions.length}
+          </Typography>
+          
+          <Typography variant="h6" sx={{ mb: 3 }}>
+            ({percentage}% правильных ответов)
+          </Typography>
+
+          {quiz.isControl && (
             <Typography sx={{ 
-              mt: 2, 
-              fontSize: '1.2rem',
-              color: isPassed ? 'green' : 'red',
-              fontWeight: 'bold'
+              color: 'text.secondary',
+              fontStyle: 'italic'
             }}>
-              Статус: {isPassed ? 'СДАЛ' : 'НЕ СДАЛ'}
+              Проходной балл: {quiz.passingScore}%
             </Typography>
-          </>
-        )}
-        
-        <Button 
-          component={Link} 
-          to="/quizlistuser" 
-          variant="contained" 
-          sx={{ mt: 3 }}
-        >
-          Вернуться к списку тестов
-        </Button>
+          )}
+        </Paper>
+
+        <Stack direction="row" spacing={2} justifyContent="center">
+          <Button
+            variant="contained"
+            size="large"
+            onClick={() => {
+              setCurrentQuestion(0);
+              setScore(0);
+              setSelectedOptions([]);
+              setTextAnswer('');
+              setIsSubmitted(false);
+            }}
+            sx={{ px: 4 }}
+          >
+            Пройти ещё раз
+          </Button>
+          
+          <Button
+            component={Link}
+            to="/"
+            variant="outlined"
+            size="large"
+            sx={{ px: 4 }}
+          >
+            К списку тестов
+          </Button>
+        </Stack>
       </Box>
     );
   }
