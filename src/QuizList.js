@@ -80,7 +80,7 @@ export default function QuizList() {
                 </Box>
               }
             >
-              <ListItemButton component={Link} to={`/quiz/${quiz.id}`}>
+              <ListItemButton component={Link} to={`/results/${quiz.id}`}>
                 <ListItemText
                   primary={
                     <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
