@@ -87,7 +87,7 @@ export default function Quiz() {
 
   if (!quiz.isAnonymous && !testStarted) {
     return (
-      <Box sx={{ p: 3, maxWidth: 500, margin: '0 auto' }}>
+      <Box sx={{ p: 3, maxWidth: 700, margin: '0 auto' }}>
          <Paper elevation={3} sx={{ p: 3, mb: 3, textAlign: 'center' }}>
           <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
             {quiz.title}
@@ -183,7 +183,7 @@ export default function Quiz() {
     const isPassed = !quiz.isControl || percentage >= quiz.passingScore;
     
     return (
-      <Box sx={{ p: 3, maxWidth: 600, margin: '0 auto' }}>
+      <Box sx={{ p: 3, maxWidth: 800, margin: '0 auto' }}>
         <Paper elevation={3} sx={{ p: 3, mb: 4, textAlign: 'center' }}>
           <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
             {quiz.title}
@@ -191,13 +191,13 @@ export default function Quiz() {
         </Paper>
 
         <Paper elevation={2} sx={{ p: 4, mb: 4, textAlign: 'center' }}>
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: 'medium' }}>
+          <Typography variant="h3" gutterBottom sx={{ color: isPassed ? 'success.main' : 'error.main', fontWeight: 'bold' }}>
             {quiz.isControl ? 
               (isPassed ? 'ТЕСТ СДАН!' : 'ТЕСТ НЕ СДАН') : 
               'ТЕСТ ЗАВЕРШЕН'}
           </Typography>
           
-          <Typography variant="h3" sx={{ 
+          <Typography variant="h5" sx={{ 
             color: isPassed ? 'success.main' : 'error.main',
             fontWeight: 'bold',
             mb: 2
