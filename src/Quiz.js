@@ -237,7 +237,7 @@ export default function Quiz() {
           
           <Button
             component={Link}
-            to="/"
+            to="/quizlistuser"
             variant="outlined"
             size="large"
             sx={{ px: 4 }}
