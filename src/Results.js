@@ -116,7 +116,7 @@ export default function Results() {
                 }
                 secondary={
                   <>
-                    <span>{quiz.questions?.length || 0} вопросов</span>
+                    <span>{quiz.settings.questionsToShow || 0} вопросов</span>
                     {quiz.isControl && (
                       <span> • Проходной балл: {quiz.passingScore}%</span>
                     )}
